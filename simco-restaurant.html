@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimCO — Restaurant Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+:root {
+  --bg:#0d0f14; --bg2:#13161d; --bg3:#1a1e28; --bg4:#21263308;
+  --border:#252a38; --border2:#2f3547;
+  --green:#00e5a0; --green-dim:#00e5a018;
+  --red:#ff4d6a; --red-dim:#ff4d6a18;
+  --orange:#ff8c42; --orange-dim:#ff8c4218;
+  --yellow:#ffd166; --yellow-dim:#ffd16618;
+  --muted:#5a6275; --muted2:#8892a4;
+  --text:#e2e8f0; --text2:#a0aec0;
+  --r1:#4f7fff; --r1-dim:#4f7fff18;
+  --r2:#c97bff; --r2-dim:#c97bff18;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:12px;padding:9px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.logo{width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-weight:700;font-size:11px;color:#0d0f14;flex-shrink:0;}
+.topbar-info .t1{font-size:14px;font-weight:700;}
+.topbar-info .t2{font-size:11px;color:var(--muted2);font-family:'Space Mono',monospace;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.last-save{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;}
+
+/* REALM SWITCHER */
+.realm-switch{display:flex;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:3px;gap:3px;}
+.realm-btn{padding:5px 16px;border-radius:6px;border:none;background:transparent;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;color:var(--muted2);}
+.realm-btn.r1.active{background:var(--r1-dim);color:var(--r1);border:1px solid var(--r1);}
+.realm-btn.r2.active{background:var(--r2-dim);color:var(--r2);border:1px solid var(--r2);}
+.realm-btn:not(.active):hover{color:var(--text2);background:var(--bg2);}
+
+.save-btn{display:flex;align-items:center;gap:5px;padding:6px 13px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s;}
+.save-btn:hover{background:var(--bg3);border-color:var(--green);color:var(--green);}
+
+/* TABS */
+.tabs{display:flex;gap:2px;padding:8px 18px 0;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto;}
+.tab{padding:6px 14px;border-radius:6px 6px 0 0;font-size:12px;font-family:'Space Mono',monospace;color:var(--muted2);cursor:pointer;border:1px solid transparent;border-bottom:none;white-space:nowrap;transition:all .15s;}
+.tab:hover{color:var(--text);background:var(--bg3);}
+.tab.active{color:var(--green);background:var(--bg);border-color:var(--border);margin-bottom:-1px;}
+
+/* REALM INDICATOR */
+.realm-indicator{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:4px;font-size:10px;font-family:'Space Mono',monospace;font-weight:700;margin-left:10px;}
+.realm-indicator.r1{background:var(--r1-dim);color:var(--r1);}
+.realm-indicator.r2{background:var(--r2-dim);color:var(--r2);}
+
+/* CONTENT */
+.content{flex:1;overflow:hidden;display:flex;}
+.pane{display:none;flex:1;overflow:hidden;}
+.pane.active{display:flex;}
+
+/* DASHBOARD */
+.dash-layout{display:grid;grid-template-columns:280px 1fr;width:100%;overflow:hidden;}
+.left-panel{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);}
+.right-panel{display:flex;flex-direction:column;overflow:hidden;}
+.panel-head{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2);}
+.phead-title{font-size:10px;font-family:'Space Mono',monospace;color:var(--muted2);text-transform:uppercase;letter-spacing:.06em;}
+.scroll{flex:1;overflow-y:auto;}
+.scroll::-webkit-scrollbar{width:3px;}
+.scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;}
+th{padding:6px 12px;font-size:10px;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1;}
+th.r{text-align:right;}
+td{padding:5px 12px;border-bottom:1px solid #1c2030;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg3);}
+.pname{font-size:12px;color:var(--text2);}
+.num{font-family:'Space Mono',monospace;font-size:12px;text-align:right;color:var(--text);}
+.num.dim{color:var(--muted);}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 9px;border-radius:4px;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;min-width:54px;text-align:center;}
+.bg{background:var(--green-dim);color:var(--green);}
+.by{background:var(--yellow-dim);color:var(--yellow);}
+.bo{background:var(--orange-dim);color:var(--orange);}
+.br{background:var(--red-dim);color:var(--red);}
+.bx{background:var(--bg3);color:var(--muted);}
+
+/* INPUT */
+.qty{width:90px;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 6px;font-family:'Space Mono',monospace;font-size:12px;color:var(--text);text-align:right;transition:all .1s;}
+.qty:hover{border-color:var(--border2);}
+.qty:focus{outline:none;border-color:var(--green);background:var(--bg3);}
+
+/* LEGEND */
+.legend{padding:7px 14px;border-top:1px solid var(--border);display:flex;gap:14px;flex-wrap:wrap;flex-shrink:0;}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);}
+.ldot{width:8px;height:8px;border-radius:2px;}
+
+/* RESTO GRID */
+.resto-grid{flex:1;overflow-y:auto;padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;align-content:start;}
+.resto-grid::-webkit-scrollbar{width:4px;}
+.resto-grid::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.rcard{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;display:flex;flex-direction:column;height:220px;}
+.rcard:hover{border-color:var(--border2);}
+.rcard-head{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0;}
+.rlabel{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;}
+.rlabel.r1c{color:var(--r1);}
+.rlabel.r2c{color:var(--r2);}
+.rcount{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+.rcard-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+.rcard-scroll::-webkit-scrollbar{width:3px;}
+.rcard-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.rcard-scroll::-webkit-scrollbar-track{background:transparent;}
+.rcard-footer{flex-shrink:0;padding:4px 10px 6px;border-top:1px solid var(--border);}
+.rtable{width:100%;}
+.rtable td{padding:4px 10px;font-size:12px;border-bottom:1px solid #1c2030;}
+.rtable tr:last-child td{border-bottom:none;}
+.rtable tr:hover td{background:#ffffff05;}
+.rt-prod{color:var(--text2);}
+.rt-qty{text-align:right;font-family:'Space Mono',monospace;}
+.empty-row{color:var(--muted);text-align:center;padding:10px;font-size:11px;}
+.add-sel{background:var(--bg3);border:1px dashed var(--border2);border-radius:4px;color:var(--muted2);font-size:11px;padding:3px 6px;cursor:pointer;width:100%;font-family:'Space Mono',monospace;}
+
+.lvl-input{width:46px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--yellow);text-align:center;}
+.lvl-input:focus{outline:none;border-color:var(--yellow);background:var(--bg3);}
+.del-btn{background:transparent;border:1px solid transparent;border-radius:4px;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:1px 5px;transition:all .1s;flex-shrink:0;}
+.del-btn:hover{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+.sync-btn{display:flex;align-items:center;gap:5px;padding:6px 13px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--green);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s;border-color:var(--green);}
+.sync-btn:hover{background:var(--green-dim);}
+.sync-btn:disabled{opacity:.4;cursor:not-allowed;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinning{display:inline-block;animation:spin .7s linear infinite;}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.4}}
+.flash{animation:flash .4s ease;}
+
+/* TOGGLE ACTIF/INACTIF */
+.toggle-btn{display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;border:1px solid;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.toggle-btn.on{background:#00e5a018;color:var(--green);border-color:var(--green);}
+.toggle-btn.on:hover{background:#00e5a030;}
+.toggle-btn.off{background:var(--red-dim);color:var(--red);border-color:var(--red);}
+.toggle-btn.off:hover{background:#ff4d6a30;}
+.rcard.inactive{opacity:.45;filter:grayscale(.6);}
+.rcard.inactive .rcard-head{background:#ff4d6a08;}
+
+/* TYPE ECO/LUXE */
+.type-select{background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--muted2);cursor:pointer;transition:all .1s;}
+.type-select:focus{outline:none;}
+.type-select.eco{border-color:#00b4d8;color:#00b4d8;background:#00b4d810;}
+.type-select.luxe{border-color:#c97bff;color:#c97bff;background:#c97bff10;}
+
+/* BOUTON PRIX */
+.prix-btn{display:flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--border2);border-radius:4px;background:transparent;color:var(--muted2);font-family:'Space Mono',monospace;font-size:10px;cursor:pointer;transition:all .1s;white-space:nowrap;}
+.prix-btn:hover{border-color:var(--yellow);color:var(--yellow);background:var(--yellow-dim);}
+
+/* MENU CARTE (⋮) */
+.rcard-menu-wrap{position:relative;}
+.rcard-menu{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#11161f;border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 12px #00000060;z-index:50;min-width:170px;overflow:hidden;}
+.rcard-menu.open{display:flex;flex-direction:column;}
+.rcard-menu button{display:block;width:100%;text-align:left;padding:7px 10px;border:none;background:transparent;color:var(--muted2);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;}
+.rcard-menu button:hover{background:var(--yellow-dim);color:var(--yellow);}
+.rcard-menu button:disabled{opacity:.35;cursor:default;}
+.rcard-menu button:disabled:hover{background:transparent;color:var(--muted2);}
+
+/* MODALE */
+.modal-overlay{position:fixed;inset:0;background:#00000080;backdrop-filter:blur(2px);z-index:100;display:flex;align-items:center;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px;width:380px;display:flex;flex-direction:column;gap:16px;}
+.modal-title{font-size:14px;font-weight:700;color:var(--text);}
+.modal-sub{font-size:11px;color:var(--muted2);font-family:'Space Mono',monospace;}
+.modal-field{display:flex;flex-direction:column;gap:5px;}
+.modal-label{font-size:11px;color:var(--muted2);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.05em;}
+.modal-select,.modal-input{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;font-family:'Space Mono',monospace;font-size:13px;color:var(--text);width:100%;}
+.modal-select:focus,.modal-input:focus{outline:none;border-color:var(--green);}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
+.modal-cancel{padding:7px 16px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--muted2);font-family:'Space Mono',monospace;font-size:12px;cursor:pointer;}
+.modal-cancel:hover{border-color:var(--red);color:var(--red);}
+.modal-confirm{padding:7px 16px;border:1px solid var(--green);border-radius:6px;background:var(--green-dim);color:var(--green);font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;}
+.modal-confirm:hover{background:var(--green);color:#0d0f14;}
+
+/* HISTORIQUE PRIX */
+.histo-toolbar{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg2);}
+.phase-filter{display:flex;gap:4px;}
+.phase-btn{padding:4px 12px;border-radius:6px;border:1px solid var(--border2);background:transparent;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted2);transition:all .1s;}
+.phase-btn:hover{color:var(--text);}
+.phase-btn.active.recession{background:#ff4d6a18;color:var(--red);border-color:var(--red);}
+.phase-btn.active.normal{background:#00e5a018;color:var(--green);border-color:var(--green);}
+.phase-btn.active.boom{background:#ffd16618;color:var(--yellow);border-color:var(--yellow);}
+.phase-btn.active.all{background:var(--bg3);color:var(--text);border-color:var(--border2);}
+.histo-grid{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:8px;}
+.histo-grid::-webkit-scrollbar{width:4px;}
+.histo-grid::-webkit-scrollbar-thumb{background:var(--border2);}
+.hentry{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;transition:border-color .1s;}
+.hentry:hover{border-color:var(--border2);}
+.hentry-phase{padding:2px 9px;border-radius:4px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;min-width:80px;text-align:center;}
+.hentry-phase.recession{background:#ff4d6a18;color:var(--red);}
+.hentry-phase.normal{background:#00e5a018;color:var(--green);}
+.hentry-phase.boom{background:#ffd16618;color:var(--yellow);}
+.hentry-resto{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;min-width:50px;}
+.hentry-type{font-size:10px;padding:1px 7px;border-radius:3px;font-family:'Space Mono',monospace;font-weight:700;}
+.hentry-type.eco{background:#00b4d810;color:#00b4d8;border:1px solid #00b4d840;}
+.hentry-type.luxe{background:#c97bff10;color:#c97bff;border:1px solid #c97bff40;}
+
+/* FRAIS COMPTABLES */
+.frais-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;max-width:1100px;}
+.frais-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.frais-card-title{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted2);margin-bottom:14px;font-weight:700;}
+.frais-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.frais-field label{font-size:12px;color:var(--text);}
+.frais-field input{background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;padding:7px 10px;}
+.frais-field input:focus{outline:none;border-color:var(--yellow);}
+.frais-readable{font-family:'Space Mono',monospace;font-size:11px;color:var(--yellow);min-height:14px;}
+.frais-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px;}
+.frais-result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;color:var(--text);}
+.frais-result-val{font-family:'Space Mono',monospace;font-weight:700;}
+.frais-total-row{font-size:14px;color:var(--yellow);}
+.frais-total-row .frais-result-val{color:var(--yellow);}
+.frais-divider{height:1px;background:var(--border);margin:8px 0;}
+.frais-status{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:700;text-align:center;}
+.frais-status.ok{background:#00e5a018;color:var(--green);border:1px solid #00e5a040;}
+.frais-status.warn{background:#ff4d6a18;color:var(--red);border:1px solid #ff4d6a40;}
+.frais-bareme{width:100%;font-size:12px;}
+.frais-bareme th{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--muted2);text-align:left;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.frais-bareme td{padding:6px 0;border-bottom:1px solid var(--border);color:var(--text);}
+.frais-bareme tr.active-tranche td{color:var(--yellow);font-weight:700;}
+.frais-bareme td.r{text-align:right;font-family:'Space Mono',monospace;}
+.hentry-note{font-family:'Space Mono',monospace;font-size:13px;color:var(--yellow);}
+.hentry-prix{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--green);margin-left:auto;}
+.hentry-date{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;}
+.hentry-del{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 5px;border-radius:3px;}
+.hentry-del:hover{color:var(--red);background:var(--red-dim);}
+.histo-empty{text-align:center;color:var(--muted);font-family:'Space Mono',monospace;font-size:12px;padding:40px;}
+.histo-realm-info{font-size:11px;color:var(--muted2);font-family:'Space Mono',monospace;margin-left:auto;}
+
+/* FILTRE INGREDIENT */
+.resto-toolbar{padding:8px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg2);}
+.ing-filter-select{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-family:'Space Mono',monospace;font-size:12px;color:var(--text);cursor:pointer;min-width:200px;}
+.ing-filter-select:focus{outline:none;border-color:var(--green);}
+.ing-filter-clear{padding:4px 10px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--muted2);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;transition:all .1s;}
+.ing-filter-clear:hover{border-color:var(--red);color:var(--red);}
+.ing-filter-info{font-size:11px;font-family:'Space Mono',monospace;color:var(--muted2);}
+.ing-filter-info span{color:var(--green);font-weight:700;}
+.rcard.hidden-by-filter{display:none;}
+.rcard.highlight-match{border-color:var(--green) !important;}
+.rcard.highlight-match .rcard-head{background:#00e5a00a;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">SC</div>
+  <div class="topbar-info">
+    <div class="t1">Restaurant SimCO <span class="realm-indicator r1" id="realmBadge">● REALM 1</span></div>
+    <div class="t2">1 cycle = 12h &nbsp;·&nbsp; 2 cycles / jour &nbsp;·&nbsp; Mise à jour manuelle quotidienne</div>
+  </div>
+  <div class="topbar-right">
+    <div class="realm-switch">
+      <button class="realm-btn r1 active" onclick="switchRealm('R1')">⚔ REALM 1</button>
+      <button class="realm-btn r2" onclick="switchRealm('R2')">🌐 REALM 2</button>
+    </div>
+    <span class="last-save" id="lastSave">Non sauvegardé</span>
+    <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--yellow);background:var(--yellow-dim);padding:4px 10px;border-radius:6px;border:1px solid var(--yellow)30;" id="totalLevel">LVL total : 0</span>
+    <button class="sync-btn" onclick="syncWarehouse()" id="syncBtn">🔄 Tout synchroniser</button>
+    <button class="save-btn" onclick="saveAll()" id="saveBtn">💾 Sauvegarder</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="dashboard" onclick="showTab('dashboard')">📊 Vue globale</div>
+  <div class="tab" data-tab="restaurants" onclick="showTab('restaurants')">🏪 Restaurants (R1–R15)</div>
+  <div class="tab" data-tab="historique" onclick="showTab('historique')">📈 Historique Prix</div>
+  <div class="tab" data-tab="frais" onclick="showTab('frais')">💰 Frais comptables</div>
+  <div class="tab" data-tab="config" onclick="showTab('config')">⚙️ Configuration</div>
+</div>
+
+<div class="content">
+
+  <!-- DASHBOARD -->
+  <div class="pane active" id="pane-dashboard">
+    <div style="display:flex;flex-direction:column;overflow:hidden;flex:1;">
+      <div class="panel-head" style="border-bottom:1px solid var(--border);padding:10px 20px;flex-shrink:0;">
+        <span class="phead-title">Stock entrepôt — saisir les quantités chaque matin</span>
+        <span style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace">∑ R1→R15</span>
+      </div>
+      <div class="scroll" style="flex:1;padding:0 8px;">
+        <table style="margin-top:2px;">
+          <thead><tr><th>Produit</th><th class="r">Qté en stock</th><th class="r">Besoin/cycle</th><th class="r">Besoin/jour</th><th class="r">Cycles restants</th></tr></thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+      <div class="legend">
+          <div class="leg"><div class="ldot" style="background:var(--green)"></div>&gt; 30 cycles</div>
+          <div class="leg"><div class="ldot" style="background:var(--yellow)"></div>15 – 30</div>
+          <div class="leg"><div class="ldot" style="background:var(--orange)"></div>5 – 15</div>
+          <div class="leg"><div class="ldot" style="background:var(--red)"></div>&lt; 5 ⚠</div>
+          <div class="leg"><div class="ldot" style="background:var(--muted)"></div>Non utilisé</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESTAURANTS -->
+  <div class="pane" id="pane-restaurants" style="flex-direction:column;">
+    <div class="resto-toolbar">
+      <select class="ing-filter-select" id="ingFilterSelect" onchange="filtrerParIngredient(this.value)">
+        <option value="">🔍 Filtrer par ingrédient…</option>
+      </select>
+      <button class="ing-filter-clear" id="ingFilterClear" onclick="clearFiltreIngredient()" style="display:none;">✕ Effacer</button>
+      <span class="ing-filter-info" id="ingFilterInfo"></span>
+    </div>
+    <div class="resto-grid" id="restoGrid"></div>
+  </div>
+
+  <!-- HISTORIQUE PRIX -->
+  <div class="pane" id="pane-historique" style="flex-direction:column;">
+    <div class="histo-toolbar">
+      <div class="phase-filter">
+        <button class="phase-btn active all" data-phase="all" onclick="filterPhase('all')">Toutes</button>
+        <button class="phase-btn recession" data-phase="recession" onclick="filterPhase('recession')">📉 Récession</button>
+        <button class="phase-btn normal" data-phase="normal" onclick="filterPhase('normal')">📊 Normal</button>
+        <button class="phase-btn boom" data-phase="boom" onclick="filterPhase('boom')">🚀 Boom</button>
+      </div>
+      <span class="histo-realm-info" id="histoRealmInfo"></span>
+    </div>
+    <div class="histo-grid" id="histoGrid"></div>
+  </div>
+
+  <!-- FRAIS COMPTABLES -->
+  <div class="pane" id="pane-frais" style="flex-direction:column;">
+    <div class="panel-head" style="border-bottom:1px solid var(--border);padding:10px 20px;flex-shrink:0;">
+      <span class="phead-title">Calcul du seuil de frais comptables — Realm <span id="fraisRealmLabel">R1</span></span>
+    </div>
+    <div class="scroll" style="flex:1;padding:20px;">
+      <div class="frais-grid">
+        <div class="frais-card">
+          <div class="frais-card-title">Vos données</div>
+          <div class="frais-field">
+            <label>💵 Cash actuel ($)</label>
+            <input type="number" id="fraisCash" step="1" placeholder="ex: 5000000" oninput="onFraisInput()">
+            <span class="frais-readable" id="fraisCashRead"></span>
+          </div>
+          <div class="frais-field">
+            <label>📜 Valeur des obligations achetées ($)</label>
+            <input type="number" id="fraisObligAchat" step="1" placeholder="ex: 2137918" oninput="onFraisInput()">
+            <span class="frais-readable" id="fraisObligAchatRead"></span>
+          </div>
+          <div class="frais-field">
+            <label>💸 Valeur des obligations vendues ($)</label>
+            <input type="number" id="fraisObligVente" step="1" placeholder="ex: 0" oninput="onFraisInput()">
+            <span class="frais-readable" id="fraisObligVenteRead"></span>
+          </div>
+          <div class="frais-field">
+            <label>👔 Augmentation du seuil (bonus cadres / CFO) ($)</label>
+            <input type="number" id="fraisCadres" step="1" placeholder="ex: 24500000" oninput="onFraisInput()">
+            <span class="frais-readable" id="fraisCadresRead"></span>
+          </div>
+          <div class="frais-note">Base comptable = Cash + (Obligations achetées − Obligations vendues) − Augmentation du seuil (cadres)</div>
+        </div>
+
+        <div class="frais-card">
+          <div class="frais-card-title">Résultat</div>
+          <div class="frais-result-row">
+            <span>Seuil de base (franchise)</span>
+            <span class="frais-result-val">3 000 000 $</span>
+          </div>
+          <div class="frais-result-row">
+            <span>+ Augmentation cadres</span>
+            <span class="frais-result-val" id="fraisOutCadres">0 $</span>
+          </div>
+          <div class="frais-result-row frais-total-row">
+            <span>= Seuil total avant frais</span>
+            <span class="frais-result-val" id="fraisOutSeuil">3 000 000 $</span>
+          </div>
+          <div class="frais-divider"></div>
+          <div class="frais-result-row">
+            <span>Base comptable (Cash + Oblig. achetées − vendues)</span>
+            <span class="frais-result-val" id="fraisOutBase">0 $</span>
+          </div>
+          <div class="frais-result-row">
+            <span>Montant au-delà du seuil</span>
+            <span class="frais-result-val" id="fraisOutDepassement">0 $</span>
+          </div>
+          <div class="frais-result-row">
+            <span>Tranche de frais applicable</span>
+            <span class="frais-result-val" id="fraisOutTaux">—</span>
+          </div>
+          <div class="frais-divider"></div>
+          <div class="frais-result-row frais-total-row" id="fraisOutFraisRow">
+            <span>💰 Frais comptables estimés</span>
+            <span class="frais-result-val" id="fraisOutFrais">0 $</span>
+          </div>
+          <div class="frais-status" id="fraisStatus"></div>
+        </div>
+
+        <div class="frais-card">
+          <div class="frais-card-title">Barème (par tranche, sur le dépassement)</div>
+          <table class="frais-bareme">
+            <thead><tr><th>Base comptable</th><th class="r">% de frais</th></tr></thead>
+            <tbody>
+              <tr><td>Jusqu'à 3M $</td><td class="r">0%</td></tr>
+              <tr><td>3M à 6M $</td><td class="r">0.5%</td></tr>
+              <tr><td>6M à 9M $</td><td class="r">1.0%</td></tr>
+              <tr><td>9M à 12M $</td><td class="r">1.5%</td></tr>
+              <tr><td>12M à 15M $</td><td class="r">2.0%</td></tr>
+              <tr><td>Au-delà de 15M $</td><td class="r">3.0%</td></tr>
+            </tbody>
+          </table>
+          <div class="frais-note">Les tranches ci-dessus s'appliquent à la <b>base comptable</b> (avant ajout de l'augmentation cadres). L'augmentation cadres décale uniquement le seuil de départ (les 3M).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIGURATION -->
+  <div class="pane" id="pane-config" style="flex-direction:column;">
+    <div class="panel-head" style="border-bottom:1px solid var(--border);padding:10px 20px;flex-shrink:0;">
+      <span class="phead-title">Configuration — identifiants SimCompanies (sauvegardés dans simco-config.json)</span>
+    </div>
+    <div class="scroll" style="flex:1;padding:20px;">
+      <div class="frais-grid">
+        <div class="frais-card">
+          <div class="frais-card-title">Realm R1</div>
+          <div class="frais-field">
+            <label>🏢 ID entreprise</label>
+            <input type="text" id="cfgIdR1" placeholder="ex: 2024397">
+          </div>
+          <div class="frais-field">
+            <label>🍪 Cookie de session</label>
+            <input type="text" id="cfgCookieR1" placeholder="sessionid=...">
+          </div>
+        </div>
+
+        <div class="frais-card">
+          <div class="frais-card-title">Realm R2</div>
+          <div class="frais-field">
+            <label>🏢 ID entreprise</label>
+            <input type="text" id="cfgIdR2" placeholder="ex: 3226681">
+          </div>
+          <div class="frais-field">
+            <label>🍪 Cookie de session</label>
+            <input type="text" id="cfgCookieR2" placeholder="sessionid=...">
+          </div>
+        </div>
+
+        <div class="frais-card">
+          <div class="frais-card-title">Aide</div>
+          <div class="frais-note">
+            <b>ID entreprise</b> : visible dans l'URL de ta page d'entreprise sur simcompanies.com (nombre après <code>/company/</code>).<br><br>
+            <b>Cookie de session</b> : connecte-toi sur simcompanies.com, ouvre les outils de développement (F12) → onglet <b>Application</b> (Chrome) ou <b>Stockage</b> (Firefox) → <b>Cookies</b> → <code>www.simcompanies.com</code> → copie la valeur du cookie <code>sessionid</code> et colle-la au format <code>sessionid=VALEUR</code>.<br><br>
+            ⚠️ Ce cookie expire après quelques jours et devra être renouvelé régulièrement.
+          </div>
+          <div style="margin-top:14px;">
+            <button class="save-btn" onclick="saveConfig()" id="saveConfigBtn">⚙️ Sauvegarder la configuration</button>
+          </div>
+          <div class="frais-status" id="configStatus" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODALE LOGGER PRIX -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div>
+      <div class="modal-title" id="modalTitle">Logger un prix</div>
+      <div class="modal-sub" id="modalSub">Restaurant X — Realm Y</div>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">Phase économique</div>
+      <select class="modal-select" id="modalPhase">
+        <option value="recession">📉 Récession</option>
+        <option value="normal" selected>📊 Normal</option>
+        <option value="boom">🚀 Boom</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <div class="modal-label">Note du restaurant</div>
+        <input class="modal-input" id="modalNote" type="number" min="0" max="10" step="0.01" placeholder="ex: 6.73">
+      </div>
+      <div class="modal-field">
+        <div class="modal-label">Prix du menu ($)</div>
+        <input class="modal-input" id="modalPrix" type="number" min="0" step="1" placeholder="ex: 88">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModalDirect()">Annuler</button>
+      <button class="modal-confirm" onclick="confirmerPrix()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PRODUITS ───────────────────────────────────────────────────────────────
+const PRODUITS = [
+  "LAIT","CAFE MOULU","PAIN","TARTE AUX POMMES","JUS D'ORANGE",
+  "JUS DE POMME","BIERE DE GINGEMBRE","BEURRE","FROMAGE",
+  "BURGER","LASAGNES","BOULETTES DE VIANDE","COCKTAIL","SALADE","SAMOUSA"
+];
+
+// ── DONNÉES PAR DÉFAUT ─────────────────────────────────────────────────────
+// REALM 2 (onglet R2 du sheet — données extraites)
+// Valeurs par défaut au premier lancement (avant sync ou chargement de
+// simco-data.json). Laisse tout vide/à zéro : remplis via le bouton
+// "🔄 Tout synchroniser" ou en éditant manuellement les ingrédients.
+const DEF_RESTO_R2 = {
+  R1:{}, R2:{}, R3:{}, R4:{}, R5:{}, R6:{}, R7:{}, R8:{},
+  R9:{}, R10:{}, R11:{}, R12:{}, R13:{}, R14:{}, R15:{}
+};
+const DEF_STOCK_R2 = {
+  "LAIT":0,"PAIN":0,"BEURRE":0,"FROMAGE":0,
+  "CAFE MOULU":0,"TARTE AUX POMMES":0,"BURGER":0,
+  "LASAGNES":0,"BOULETTES DE VIANDE":0,"SALADE":0,
+  "SAMOUSA":0,"COCKTAIL":0,"JUS D'ORANGE":0,
+  "JUS DE POMME":0,"BIERE DE GINGEMBRE":0,"CITROUILLE":0
+};
+
+const DEF_RESTO_R1 = {
+  R1:{}, R2:{}, R3:{}, R4:{}, R5:{}, R6:{}, R7:{}, R8:{},
+  R9:{}, R10:{}, R11:{}, R12:{}, R13:{}, R14:{}, R15:{}
+};
+const DEF_STOCK_R1 = {
+  "LAIT":0,"PAIN":0,"BEURRE":0,"FROMAGE":0,
+  "CAFE MOULU":0,"TARTE AUX POMMES":0,"BURGER":0,
+  "LASAGNES":0,"BOULETTES DE VIANDE":0,"SALADE":0,
+  "SAMOUSA":0,"COCKTAIL":0,"JUS D'ORANGE":0,
+  "JUS DE POMME":0,"BIERE DE GINGEMBRE":0,"CITROUILLE":0
+};
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+const SK = "simco_dual_v1";
+let realm = "R1"; // realm actif
+let data = { R1: null, R2: null };
+
+function getDefRestos(r) { return r === "R1" ? DEF_RESTO_R1 : DEF_RESTO_R2; }
+function getDefStock(r)  { return r === "R1" ? DEF_STOCK_R1 : DEF_STOCK_R2; }
+
+function initRealm(r) {
+  if (data[r]) return;
+  data[r] = { stock: {}, restos: {}, levels: {}, types: {}, actif: {}, prixHistorique: [], noms: {}, ordre: [], frais: { cash: 0, obligAchat: 0, obligVente: 0, cadres: 0 } };
+  PRODUITS.forEach(p => { data[r].stock[p] = getDefStock(r)[p] ?? 0; });
+  for (let i = 1; i <= 15; i++) {
+    const k = "R" + i;
+    data[r].restos[k] = {};
+    data[r].levels[k] = 0;
+    data[r].types[k] = "eco";
+    data[r].actif[k] = true;
+    data[r].noms[k] = "";
+    data[r].ordre.push(k);
+    const def = getDefRestos(r)[k] || {};
+    Object.keys(def).forEach(p => { if (def[p] > 0) data[r].restos[k][p] = def[p]; });
+  }
+}
+
+function getTotalLevel() {
+  return Object.values(data[realm].levels || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+}
+
+function updateTotalLevel() {
+  document.getElementById("totalLevel").textContent = "LVL total : " + getTotalLevel();
+}
+
+function patchRealm(r) {
+  if (!data[r].levels) { data[r].levels = {}; for(let i=1;i<=15;i++) data[r].levels["R"+i]=0; }
+  if (!data[r].types)  { data[r].types  = {}; for(let i=1;i<=15;i++) data[r].types["R"+i]="eco"; }
+  if (!data[r].actif)  { data[r].actif  = {}; for(let i=1;i<=15;i++) data[r].actif["R"+i]=true; }
+  if (!data[r].prixHistorique) data[r].prixHistorique = [];
+  if (!data[r].noms) { data[r].noms = {}; for(let i=1;i<=15;i++) data[r].noms["R"+i]=""; }
+  if (!data[r].frais) data[r].frais = { cash: 0, obligAchat: 0, obligVente: 0, cadres: 0 };
+  else {
+    // Migration depuis l'ancien champ unique "obligations"
+    if (data[r].frais.obligAchat === undefined) data[r].frais.obligAchat = data[r].frais.obligations || 0;
+    if (data[r].frais.obligVente === undefined) data[r].frais.obligVente = 0;
+  }
+  if (!data[r].ordre || data[r].ordre.length !== 15) {
+    const existant = Array.isArray(data[r].ordre) ? data[r].ordre.filter(k => /^R\d+$/.test(k)) : [];
+    const toutes = []; for(let i=1;i<=15;i++) toutes.push("R"+i);
+    const manquantes = toutes.filter(k => !existant.includes(k));
+    data[r].ordre = [...existant, ...manquantes];
+  }
+}
+
+function loadSaved() {
+  fetch('http://localhost:3001/api/load')
+    .then(r => r.json())
+    .then(saved => {
+      if (saved.empty) return;
+      if (saved.R1) { data.R1 = saved.R1; patchRealm("R1"); }
+      if (saved.R2) { data.R2 = saved.R2; patchRealm("R2"); }
+      if (saved.date) document.getElementById("lastSave").textContent = "Sauvegardé " + saved.date;
+      renderAll();
+      console.log('Données chargées depuis simco-data.json');
+    })
+    .catch(() => {
+      try {
+        const raw = localStorage.getItem(SK);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved.R1) { data.R1 = saved.R1; patchRealm("R1"); }
+        if (saved.R2) { data.R2 = saved.R2; patchRealm("R2"); }
+        if (saved.date) document.getElementById("lastSave").textContent = "Sauvegardé " + saved.date;
+        renderAll();
+      } catch(e) {}
+    });
+}
+
+function saveAll() {
+  const date = new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const payload = { R1: data.R1, R2: data.R2, date };
+
+  // Sauvegarde fichier JSON via le serveur
+  fetch('http://localhost:3001/api/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(resp => {
+    if (resp.ok) {
+      document.getElementById("lastSave").textContent = "Sauvegardé " + date;
+      const btn = document.getElementById("saveBtn");
+      btn.textContent = "✓ Sauvegardé";
+      btn.style.color = "var(--green)";
+      btn.style.borderColor = "var(--green)";
+      setTimeout(() => { btn.textContent = "💾 Sauvegarder"; btn.style.color = ""; btn.style.borderColor = ""; }, 2000);
+    }
+  })
+  .catch(() => {
+    // Fallback localStorage si serveur pas dispo
+    try { localStorage.setItem(SK, JSON.stringify(payload)); } catch(e) {}
+  });
+}
+
+// ── REALM SWITCH ───────────────────────────────────────────────────────────
+function switchRealm(r) {
+  realm = r;
+  initRealm(r);
+  document.querySelectorAll('.realm-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.realm-btn.' + r.toLowerCase()).classList.add('active');
+  const badge = document.getElementById("realmBadge");
+  badge.className = "realm-indicator " + r.toLowerCase();
+  badge.textContent = "● REALM " + r.slice(1);
+  renderAll();
+  ingFiltreActif = "";
+  const active = document.querySelector('.tab.active');
+  if (active && active.dataset.tab === 'restaurants') { renderRestos(); updateTotalLevel(); }
+  if (active && active.dataset.tab === 'historique') renderHistorique();
+  if (active && active.dataset.tab === 'frais') renderFrais();
+}
+
+// ── CALCULS ────────────────────────────────────────────────────────────────
+function getTotalBesoin() {
+  const tot = {}; PRODUITS.forEach(p => tot[p] = 0);
+  for (let i = 1; i <= 15; i++) {
+    const k = "R" + i;
+    if (data[realm].actif?.[k] === false) continue; // restaurant inactif ignoré
+    PRODUITS.forEach(p => { tot[p] += Number(data[realm].restos[k]?.[p]) || 0; });
+  }
+  return tot;
+}
+
+function badge(cycles, besoin, stock) {
+  if (!besoin) return '<span class="badge bx">—</span>';
+  const n = Math.round(cycles * 10) / 10;
+  const cls = n >= 30 ? "bg" : n >= 15 ? "by" : n >= 5 ? "bo" : "br";
+  let tooltip = '';
+  if (stock !== undefined) {
+    const jours = n / 2;
+    const joursLabel = jours >= 1 ? `~${Math.floor(jours)}j ${Math.round((jours % 1) * 24)}h` : `~${Math.round(jours * 24)}h`;
+    tooltip = `Stock : ${stock.toLocaleString('fr-FR')} — Besoin/cycle : ${besoin.toLocaleString('fr-FR')} — Épuisé dans ${joursLabel}`;
+  }
+  return `<span class="badge ${cls}" title="${tooltip}">${n.toFixed(1)}</span>`;
+}
+
+function fmt(n) { return n > 0 ? n.toLocaleString('fr-FR') : '<span style="color:var(--muted)">—</span>'; }
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function renderBesoin() {
+  const el = document.getElementById("besoinBody");
+  if (!el) return; // panneau supprimé
+  const tot = getTotalBesoin();
+  el.innerHTML = PRODUITS.map(p => {
+    const v = tot[p];
+    return `<tr><td class="pname">${p}</td><td class="num ${v>0?'':'dim'}">${fmt(v)}</td></tr>`;
+  }).join('');
+}
+
+function renderStock() {
+  const tot = getTotalBesoin();
+  document.getElementById("stockBody").innerHTML = PRODUITS.map(p => {
+    const b = tot[p], s = Number(data[realm].stock[p]) || 0;
+    const cyc = b > 0 ? s / b : 0;
+    const bJour = b * 2; // 2 cycles par jour
+    return `<tr>
+      <td class="pname">${p}</td>
+      <td style="text-align:right"><input class="qty" type="number" min="0" step="1000" value="${s}" data-prod="${p}" oninput="onStockChange(this)"></td>
+      <td class="num ${b>0?'':'dim'}">${fmt(b)}</td>
+      <td class="num ${b>0?'':'dim'}">${fmt(bJour)}</td>
+      <td style="text-align:right;padding-right:14px">${badge(cyc, b, s)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function onStockChange(el) {
+  const p = el.dataset.prod;
+  data[realm].stock[p] = parseInt(el.value) || 0;
+  const tot = getTotalBesoin();
+  const b = tot[p], s = data[realm].stock[p];
+  const row = el.closest('tr');
+  row.cells[4].innerHTML = badge(b > 0 ? s/b : 0, b, s);
+}
+
+function renderRestos() {
+  const colorClass = realm === "R1" ? "r1c" : "r2c";
+  let html = '';
+  const ordre = data[realm].ordre;
+  ordre.forEach((k, idx) => {
+    const i = parseInt(k.replace("R",""));
+    const rd = data[realm].restos[k];
+    const actifs = PRODUITS.filter(p => p in rd && rd[p] !== undefined && rd[p] !== null);
+    const restants = PRODUITS.filter(p => !actifs.includes(p));
+    const typeVal = data[realm].types?.[k] || "eco";
+    const isActif = data[realm].actif?.[k] !== false;
+    const nbPrix = (data[realm].prixHistorique || []).filter(e => e.resto === k).length;
+    const nomPerso = (data[realm].noms?.[k] || "").trim();
+    const label = nomPerso ? nomPerso : "Restaurant " + i;
+    html += `<div class="rcard${isActif ? '' : ' inactive'}" data-resto="${k}" data-prods="${actifs.join(',')}">
+      <div class="rcard-head">
+        <span class="rlabel ${colorClass}" title="${k}" ondblclick="renommerResto('${k}')" style="cursor:pointer;">${label}</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="toggle-btn ${isActif ? 'on' : 'off'}" data-resto="${k}" onclick="toggleActif('${k}')">${isActif ? '● ON' : '○ OFF'}</button>
+          <select class="type-select ${typeVal}" data-resto="${k}" onchange="onTypeChange(this)">
+            <option value="eco" ${typeVal==="eco"?"selected":""}>ECO</option>
+            <option value="luxe" ${typeVal==="luxe"?"selected":""}>LUXE</option>
+          </select>
+          <span style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;">LVL</span>
+          <input class="lvl-input" type="number" min="0" step="1" value="${data[realm].levels[k] || 0}" data-resto="${k}" oninput="onLevelChange(this)" style="width:46px;">
+          <div class="rcard-menu-wrap">
+            <button class="prix-btn" onclick="toggleCardMenu(event, '${k}')" title="Plus d'options">⋮</button>
+            <div class="rcard-menu" id="menu-${k}">
+              <button onclick="closeCardMenu(); ouvrirModalPrix('${k}')">📈 Historique prix${nbPrix > 0 ? ' (' + nbPrix + ')' : ''}</button>
+              <button onclick="closeCardMenu(); renommerResto('${k}')">✏️ Renommer</button>
+              <button onclick="closeCardMenu(); deplacerResto(${idx}, -1)" ${idx===0?'disabled':''}>↑ Monter</button>
+              <button onclick="closeCardMenu(); deplacerResto(${idx}, 1)" ${idx===ordre.length-1?'disabled':''}>↓ Descendre</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rcard-scroll">
+        <table class="rtable">`;
+    if (!actifs.length) {
+      html += `<tr><td colspan="2" class="empty-row">Aucun ingrédient — à saisir</td></tr>`;
+    } else {
+      actifs.forEach(p => {
+        const pSafe = p.replace(/'/g, "\\'");
+        html += `<tr>
+          <td class="rt-prod">${p}</td>
+          <td class="rt-qty" style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
+            <input class="qty" style="width:80px" type="number" min="0" step="1" value="${rd[p]}" data-resto="${k}" data-prod="${p}" oninput="onRestoChange(this)">
+            <button class="del-btn" data-resto="${k}" data-prod="${p}" onclick="removeIngredient(this.dataset.resto, this.dataset.prod)" title="Supprimer">×</button>
+          </td>
+        </tr>`;
+      });
+    }
+    html += `</table>
+      </div>
+      <div class="rcard-footer">
+        <select class="add-sel" data-resto="${k}" onchange="addIngredient(this)">
+          <option value="">+ Ajouter un ingrédient</option>
+          ${restants.map(p=>`<option value="${p}">${p}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+  });
+  document.getElementById("restoGrid").innerHTML = html;
+  // Alimenter le select filtre avec les ingrédients réellement utilisés dans ce realm
+  const ingUtilises = new Set();
+  for (let i = 1; i <= 15; i++) {
+    const k = "R" + i;
+    PRODUITS.forEach(p => { if (data[realm].restos[k]?.[p]) ingUtilises.add(p); });
+  }
+  const sel = document.getElementById("ingFilterSelect");
+  const valActuelle = sel.value;
+  sel.innerHTML = '<option value="">🔍 Filtrer par ingrédient…</option>' +
+    [...ingUtilises].sort().map(p => `<option value="${p}" ${p===valActuelle?"selected":""}>${p}</option>`).join('');
+  // Réappliquer le filtre si actif
+  if (ingFiltreActif) appliquerFiltreVisuel(ingFiltreActif);
+}
+
+// ── FILTRE PAR INGRÉDIENT ──────────────────────────────────────────────────
+let ingFiltreActif = "";
+
+function filtrerParIngredient(prod) {
+  ingFiltreActif = prod;
+  const clearBtn = document.getElementById("ingFilterClear");
+  const info = document.getElementById("ingFilterInfo");
+  if (!prod) {
+    clearBtn.style.display = "none";
+    info.innerHTML = "";
+    appliquerFiltreVisuel("");
+    return;
+  }
+  clearBtn.style.display = "";
+  appliquerFiltreVisuel(prod);
+}
+
+function appliquerFiltreVisuel(prod) {
+  const cards = document.querySelectorAll('#restoGrid .rcard');
+  const info = document.getElementById("ingFilterInfo");
+  let count = 0;
+  cards.forEach(card => {
+    if (!prod) {
+      card.classList.remove('hidden-by-filter', 'highlight-match');
+      return;
+    }
+    const prods = card.dataset.prods ? card.dataset.prods.split(',') : [];
+    const match = prods.includes(prod);
+    card.classList.toggle('hidden-by-filter', !match);
+    card.classList.toggle('highlight-match', match);
+    if (match) count++;
+  });
+  if (prod) info.innerHTML = `<span>${count}</span> restaurant${count > 1 ? 's' : ''} utilisent <span>${prod}</span>`;
+}
+
+function clearFiltreIngredient() {
+  ingFiltreActif = "";
+  document.getElementById("ingFilterSelect").value = "";
+  document.getElementById("ingFilterClear").style.display = "none";
+  document.getElementById("ingFilterInfo").innerHTML = "";
+  appliquerFiltreVisuel("");
+}
+
+function onRestoChange(el) {
+  data[realm].restos[el.dataset.resto][el.dataset.prod] = parseInt(el.value) || 0;
+  renderBesoin();
+  // Refresh badges stock sans re-render complet
+  const tot = getTotalBesoin();
+  document.querySelectorAll('#stockBody tr').forEach(row => {
+    const inp = row.querySelector('.qty');
+    if (!inp) return;
+    const p = inp.dataset.prod, b = tot[p], s = data[realm].stock[p];
+    row.cells[2].innerHTML = fmt(b);
+    row.cells[2].className = `num ${b>0?'':'dim'}`;
+    row.cells[3].innerHTML = fmt(b * 2);
+    row.cells[3].className = `num ${b>0?'':'dim'}`;
+    row.cells[4].innerHTML = badge(b>0?s/b:0, b, s);
+  });
+}
+
+function removeIngredient(resto, prod) {
+  delete data[realm].restos[resto][prod];
+  renderRestos(); renderBesoin();
+  const tot = getTotalBesoin();
+  document.querySelectorAll('#stockBody tr').forEach(row => {
+    const inp = row.querySelector('.qty'); if (!inp) return;
+    const p = inp.dataset.prod, b = tot[p], s = data[realm].stock[p];
+    row.cells[2].innerHTML = fmt(b);
+    row.cells[2].className = `num ${b>0?'':'dim'}`;
+    row.cells[3].innerHTML = fmt(b * 2);
+    row.cells[3].className = `num ${b>0?'':'dim'}`;
+    row.cells[4].innerHTML = badge(b>0?s/b:0, b, s);
+  });
+}
+
+function onLevelChange(el) {
+  data[realm].levels[el.dataset.resto] = parseInt(el.value) || 0;
+  updateTotalLevel();
+}
+
+function addIngredient(sel) {
+  const p = sel.value, resto = sel.dataset.resto;
+  if (!p) return;
+  data[realm].restos[resto][p] = 1; // valeur 1 pour le distinguer de "absent"
+  renderRestos(); renderBesoin();
+}
+
+// ── SYNC ENTREPÔT ──────────────────────────────────────────────────────────
+// (les IDs entreprise et cookies de session sont gérés côté serveur, dans simco-config.json)
+
+// Mapping nom retourné par le serveur → nom dashboard
+// Le serveur retourne déjà les bons noms via KIND_FALLBACK
+const SC_MAP = {
+  "LAIT":               "LAIT",
+  "PAIN":               "PAIN",
+  "CAFE MOULU":         "CAFE MOULU",
+  "TARTE AUX POMMES":   "TARTE AUX POMMES",
+  "JUS D'ORANGE":       "JUS D'ORANGE",
+  "JUS DE POMME":       "JUS DE POMME",
+  "BIERE DE GINGEMBRE": "BIERE DE GINGEMBRE",
+  "BEURRE":             "BEURRE",
+  "FROMAGE":            "FROMAGE",
+  "BURGER":             "BURGER",
+  "LASAGNES":           "LASAGNES",
+  "BOULETTES DE VIANDE":"BOULETTES DE VIANDE",
+  "COCKTAIL":           "COCKTAIL",
+  "SALADE":             "SALADE",
+  "SAMOUSA":            "SAMOUSA",
+};
+
+async function syncWarehouse() {
+  const btn = document.getElementById("syncBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinning">🔄</span> Sync en cours…';
+
+  // Passe par le proxy local (server-restaurant.js) pour éviter le CORS
+  const url = `http://localhost:3001/api/warehouse/${realm}`;
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const items = await resp.json();
+
+    if (items.error) throw new Error(items.error);
+
+    // Reset stock à 0 avant de remplir
+    PRODUITS.forEach(p => { data[realm].stock[p] = 0; });
+
+    let matched = 0;
+    const totaux = {};
+    items.forEach(item => {
+      const key = (item.name || "").trim().toUpperCase();
+      const produit = SC_MAP[key];
+      if (produit) {
+        totaux[produit] = (totaux[produit] || 0) + Math.floor(item.quantity || 0);
+      }
+    });
+    Object.entries(totaux).forEach(([produit, qte]) => {
+      data[realm].stock[produit] = qte;
+      matched++;
+    });
+
+    // ── Cash ────────────────────────────────────────────────────────────
+    let cashOk = false;
+    try {
+      const cashResp = await fetch(`http://localhost:3001/api/cash/${realm}`);
+      const cashData = await cashResp.json();
+      if (cashData.money !== undefined) {
+        if (!data[realm].frais) data[realm].frais = { cash: 0, obligAchat: 0, obligVente: 0, cadres: 0 };
+        data[realm].frais.cash = cashData.money;
+        cashOk = true;
+        // Si l'onglet frais est ouvert, on rafraîchit l'affichage
+        const activeTab = document.querySelector('.tab.active');
+        if (activeTab && activeTab.dataset.tab === 'frais') renderFrais();
+      }
+    } catch (e) {
+      console.warn("Sync cash échouée:", e);
+    }
+
+    renderStock();
+    saveAll();
+
+    btn.innerHTML = `✅ ${matched} produits` + (cashOk ? ' + cash' : '') + ` sync`;
+    btn.style.color = "var(--green)";
+    setTimeout(() => {
+      btn.innerHTML = "🔄 Tout synchroniser";
+      btn.style.color = "";
+      btn.disabled = false;
+    }, 3000);
+
+  } catch(e) {
+    btn.innerHTML = "❌ Lance lancer-restaurant.bat d'abord";
+    btn.style.color = "var(--red)";
+    btn.disabled = false;
+    setTimeout(() => {
+      btn.innerHTML = "🔄 Tout synchroniser";
+      btn.style.color = "";
+    }, 4000);
+    console.error("SimCo sync error:", e);
+  }
+}
+
+function onTypeChange(sel) {
+  const k = sel.dataset.resto;
+  const v = sel.value;
+  if (!data[realm].types) data[realm].types = {};
+  data[realm].types[k] = v;
+  sel.className = "type-select " + v;
+}
+
+function toggleActif(k) {
+  if (!data[realm].actif) data[realm].actif = {};
+  data[realm].actif[k] = data[realm].actif[k] === false ? true : false;
+  renderRestos();
+  renderBesoin();
+  const tot = getTotalBesoin();
+  document.querySelectorAll('#stockBody tr').forEach(row => {
+    const inp = row.querySelector('.qty'); if (!inp) return;
+    const p = inp.dataset.prod, b = tot[p], s = data[realm].stock[p];
+    row.cells[2].innerHTML = fmt(b);
+    row.cells[2].className = `num ${b>0?'':'dim'}`;
+    row.cells[3].innerHTML = fmt(b * 2);
+    row.cells[3].className = `num ${b>0?'':'dim'}`;
+    row.cells[4].innerHTML = badge(b>0?s/b:0, b, s);
+  });
+}
+
+function renommerResto(k) {
+  if (!data[realm].noms) data[realm].noms = {};
+  const actuel = data[realm].noms[k] || "";
+  const nouveau = prompt("Nom personnalisé pour " + k + " (laisser vide pour revenir au nom par défaut) :", actuel);
+  if (nouveau === null) return; // annulé
+  data[realm].noms[k] = nouveau.trim();
+  renderRestos();
+}
+
+function deplacerResto(idx, direction) {
+  const ordre = data[realm].ordre;
+  const nouvIdx = idx + direction;
+  if (nouvIdx < 0 || nouvIdx >= ordre.length) return;
+  [ordre[idx], ordre[nouvIdx]] = [ordre[nouvIdx], ordre[idx]];
+  renderRestos();
+}
+
+function closeCardMenu() {
+  document.querySelectorAll('.rcard-menu.open').forEach(m => m.classList.remove('open'));
+}
+
+function toggleCardMenu(ev, k) {
+  ev.stopPropagation();
+  const menu = document.getElementById('menu-' + k);
+  const wasOpen = menu.classList.contains('open');
+  closeCardMenu();
+  if (!wasOpen) menu.classList.add('open');
+}
+
+// Ferme le menu si on clique ailleurs
+document.addEventListener('click', closeCardMenu);
+
+// ── MODALE PRIX ────────────────────────────────────────────────────────────
+let _modalResto = null;
+
+function ouvrirModalPrix(k) {
+  _modalResto = k;
+  const num = k.replace("R","");
+  const typeVal = data[realm].types?.[k] || "eco";
+  document.getElementById("modalTitle").textContent = `Logger un prix — Restaurant ${num}`;
+  document.getElementById("modalSub").textContent = `Realm ${realm.replace("R","")} · ${typeVal === "luxe" ? "🟣 Luxe" : "🔵 Éco"}`;
+  document.getElementById("modalNote").value = "";
+  document.getElementById("modalPrix").value = "";
+  document.getElementById("modalOverlay").classList.remove("hidden");
+  document.getElementById("modalNote").focus();
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById("modalOverlay")) closeModalDirect();
+}
+
+function closeModalDirect() {
+  document.getElementById("modalOverlay").classList.add("hidden");
+  _modalResto = null;
+}
+
+function confirmerPrix() {
+  const note = parseFloat(document.getElementById("modalNote").value);
+  const prix = parseInt(document.getElementById("modalPrix").value);
+  const phase = document.getElementById("modalPhase").value;
+  if (!_modalResto || isNaN(note) || isNaN(prix) || prix <= 0) {
+    document.getElementById("modalNote").style.borderColor = isNaN(note) ? "var(--red)" : "";
+    document.getElementById("modalPrix").style.borderColor = isNaN(prix)||prix<=0 ? "var(--red)" : "";
+    return;
+  }
+  const typeVal = data[realm].types?.[_modalResto] || "eco";
+  const entry = {
+    id: Date.now(),
+    realm,
+    resto: _modalResto,
+    type: typeVal,
+    phase,
+    note: Math.round(note * 100) / 100,
+    prix,
+    date: new Date().toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  };
+  if (!data[realm].prixHistorique) data[realm].prixHistorique = [];
+  data[realm].prixHistorique.unshift(entry);
+  closeModalDirect();
+  saveAll();
+  // Refresh le compteur sur le bouton si on est dans l'onglet restos
+  const btn = document.querySelector(`.prix-btn[data-resto="${entry.resto}"]`);
+  if (btn) {
+    const nb = data[realm].prixHistorique.filter(e => e.resto === entry.resto).length;
+    btn.textContent = "📈 " + nb;
+  }
+}
+
+// ── HISTORIQUE PRIX ────────────────────────────────────────────────────────
+let histoPhaseFilter = "all";
+
+function filterPhase(phase) {
+  histoPhaseFilter = phase;
+  document.querySelectorAll('.phase-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.phase === phase);
+  });
+  renderHistorique();
+}
+
+function renderHistorique() {
+  const grid = document.getElementById("histoGrid");
+  if (!grid) return;
+  document.getElementById("histoRealmInfo").textContent = `Realm ${realm.replace("R","")}`;
+  const all = data[realm].prixHistorique || [];
+  const filtered = histoPhaseFilter === "all" ? all : all.filter(e => e.phase === histoPhaseFilter);
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="histo-empty">Aucune entrée${histoPhaseFilter !== "all" ? " pour cette phase" : ""} — utilise le bouton 📈 sur chaque restaurant</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(e => {
+    const phaseLabel = e.phase === "recession" ? "📉 Récession" : e.phase === "boom" ? "🚀 Boom" : "📊 Normal";
+    return `<div class="hentry">
+      <span class="hentry-phase ${e.phase}">${phaseLabel}</span>
+      <span class="hentry-resto">${e.resto}</span>
+      <span class="hentry-type ${e.type}">${e.type === "luxe" ? "LUXE" : "ÉCO"}</span>
+      <span class="hentry-note">★ ${e.note.toFixed(2)}</span>
+      <span class="hentry-prix">$${e.prix}</span>
+      <span class="hentry-date">${e.date}</span>
+      <button class="hentry-del" onclick="supprimerEntree(${e.id})" title="Supprimer">×</button>
+    </div>`;
+  }).join('');
+}
+
+function supprimerEntree(id) {
+  data[realm].prixHistorique = (data[realm].prixHistorique || []).filter(e => e.id !== id);
+  renderHistorique();
+  saveAll();
+}
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  if (name === 'restaurants') renderRestos();
+  if (name === 'historique') renderHistorique();
+  if (name === 'frais') renderFrais();
+  if (name === 'config') renderConfig();
+}
+
+// ── FRAIS COMPTABLES ─────────────────────────────────────────────────────
+function renderFrais() {
+  document.getElementById('fraisRealmLabel').textContent = realm === "R1" ? "R1" : "R2";
+  const f = data[realm].frais || {};
+  document.getElementById('fraisCash').value = f.cash ?? '';
+  document.getElementById('fraisObligAchat').value = f.obligAchat ?? '';
+  document.getElementById('fraisObligVente').value = f.obligVente ?? '';
+  document.getElementById('fraisCadres').value = f.cadres ?? '';
+  calculerFrais();
+}
+
+function onFraisInput() {
+  if (!data[realm].frais) data[realm].frais = {};
+  data[realm].frais.cash = parseFloat(document.getElementById('fraisCash').value) || 0;
+  data[realm].frais.obligAchat = parseFloat(document.getElementById('fraisObligAchat').value) || 0;
+  data[realm].frais.obligVente = parseFloat(document.getElementById('fraisObligVente').value) || 0;
+  data[realm].frais.cadres = parseFloat(document.getElementById('fraisCadres').value) || 0;
+  calculerFrais();
+}
+
+function fmtMoney(n) {
+  return Math.round(n).toLocaleString('fr-FR') + ' $';
+}
+
+// Affiche un montant en toutes lettres pour éviter les erreurs de zéros
+// ex: 5000000 -> "5 000 000 $  →  5 M$"
+function fmtReadable(n) {
+  if (!n) return '';
+  const abs = Math.abs(n);
+  const signe = n < 0 ? '-' : '';
+  let court = '';
+  if (abs >= 1e6) {
+    court = (abs / 1e6).toLocaleString('fr-FR', {maximumFractionDigits: 2}) + ' M$';
+  } else if (abs >= 1e3) {
+    court = (abs / 1e3).toLocaleString('fr-FR', {maximumFractionDigits: 2}) + ' k$';
+  } else {
+    return signe + abs.toLocaleString('fr-FR') + ' $';
+  }
+  return signe + abs.toLocaleString('fr-FR') + ' $  →  ' + signe + court;
+}
+
+function majLectureChamps() {
+  const f = data[realm].frais || {};
+  document.getElementById('fraisCashRead').textContent = fmtReadable(f.cash || 0);
+  document.getElementById('fraisObligAchatRead').textContent = fmtReadable(f.obligAchat || 0);
+  document.getElementById('fraisObligVenteRead').textContent = fmtReadable(f.obligVente || 0);
+  document.getElementById('fraisCadresRead').textContent = fmtReadable(f.cadres || 0);
+}
+
+// Calcule les frais comptables : taux unique appliqué sur tout le dépassement,
+// le taux étant déterminé par la tranche dans laquelle tombe (3M de base + dépassement).
+// Vérifié sur l'exemple officiel : dépassement=137 918$ -> 3M+137 918=3 137 918$ -> tranche "3M-6M"=0.5% -> 137 918 x 0.5% = 690$ (arrondi sup.)
+function calculerFraisProgressifs(depassement) {
+  if (depassement <= 0) return { frais: 0, tranche: "Aucun (sous le seuil)" };
+  const tranches = [
+    { min: 0,    max: 3e6,  taux: 0.000, label: "Jusqu'à 3M $ (0%)" },
+    { min: 3e6,  max: 6e6,  taux: 0.005, label: "3M – 6M $ (0.5%)" },
+    { min: 6e6,  max: 9e6,  taux: 0.010, label: "6M – 9M $ (1.0%)" },
+    { min: 9e6,  max: 12e6, taux: 0.015, label: "9M – 12M $ (1.5%)" },
+    { min: 12e6, max: 15e6, taux: 0.020, label: "12M – 15M $ (2.0%)" },
+    { min: 15e6, max: Infinity, taux: 0.030, label: "Au-delà de 15M $ (3.0%)" },
+  ];
+  const position = 3e6 + depassement;
+  const t = tranches.find(t => position > t.min && position <= t.max) || tranches[tranches.length - 1];
+  const frais = Math.ceil(depassement * t.taux);
+  return { frais, tranche: t.label };
+}
+
+function calculerFrais() {
+  majLectureChamps();
+  const f = data[realm].frais || {};
+  const cash = f.cash || 0;
+  const obligAchat = f.obligAchat || 0;
+  const obligVente = f.obligVente || 0;
+  const cadres = f.cadres || 0;
+
+  const seuilBase = 3e6;
+  const seuilTotal = seuilBase + cadres;
+  const base = cash + obligAchat - obligVente;
+  const depassement = Math.max(0, base - seuilTotal);
+
+  const { frais, tranche } = calculerFraisProgressifs(depassement);
+
+  document.getElementById('fraisOutCadres').textContent = fmtMoney(cadres);
+  document.getElementById('fraisOutSeuil').textContent = fmtMoney(seuilTotal);
+  document.getElementById('fraisOutBase').textContent = fmtMoney(base);
+  document.getElementById('fraisOutDepassement').textContent = fmtMoney(depassement);
+  document.getElementById('fraisOutTaux').textContent = tranche;
+  document.getElementById('fraisOutFrais').textContent = fmtMoney(frais);
+
+  const status = document.getElementById('fraisStatus');
+  if (depassement <= 0) {
+    status.className = 'frais-status ok';
+    status.textContent = `✅ Sous le seuil — marge restante avant frais : ${fmtMoney(seuilTotal - base)}`;
+  } else {
+    status.className = 'frais-status warn';
+    status.textContent = `⚠️ Seuil dépassé de ${fmtMoney(depassement)} — frais estimés : ${fmtMoney(frais)}/jour`;
+  }
+
+  // Surligner la tranche active dans le barème (position = 3M + dépassement)
+  const position = 3e6 + depassement;
+  const seuilsM = [0, 3, 6, 9, 12, 15, Infinity];
+  document.querySelectorAll('.frais-bareme tbody tr').forEach((tr, idx) => {
+    const inTranche = position > seuilsM[idx] * 1e6 && position <= seuilsM[idx+1] * 1e6;
+    tr.classList.toggle('active-tranche', depassement > 0 && inTranche);
+  });
+}
+
+function renderAll() { renderBesoin(); renderStock(); updateTotalLevel(); }
+
+// ── CONFIGURATION ────────────────────────────────────────────────────────
+function renderConfig() {
+  fetch('http://localhost:3001/api/config')
+    .then(r => r.json())
+    .then(cfg => {
+      const ids = cfg.COMPANY_IDS || {};
+      const cookies = cfg.SESSION_COOKIES || {};
+      document.getElementById('cfgIdR1').value = ids.R1 || '';
+      document.getElementById('cfgIdR2').value = ids.R2 || '';
+      document.getElementById('cfgCookieR1').value = cookies.R1 || '';
+      document.getElementById('cfgCookieR2').value = cookies.R2 || '';
+    })
+    .catch(e => {
+      console.warn('Impossible de charger la configuration:', e);
+    });
+}
+
+function saveConfig() {
+  const btn = document.getElementById('saveConfigBtn');
+  const status = document.getElementById('configStatus');
+  const payload = {
+    COMPANY_IDS: {
+      R1: document.getElementById('cfgIdR1').value.trim(),
+      R2: document.getElementById('cfgIdR2').value.trim(),
+    },
+    SESSION_COOKIES: {
+      R1: document.getElementById('cfgCookieR1').value.trim(),
+      R2: document.getElementById('cfgCookieR2').value.trim(),
+    }
+  };
+
+  btn.disabled = true;
+  fetch('http://localhost:3001/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(r => r.json())
+    .then(resp => {
+      status.style.display = 'block';
+      if (resp.ok) {
+        status.className = 'frais-status ok';
+        status.textContent = '✅ Configuration sauvegardée. Prête à être utilisée pour la synchronisation.';
+      } else {
+        status.className = 'frais-status warn';
+        status.textContent = '⚠️ Erreur : ' + (resp.error || 'inconnue');
+      }
+    })
+    .catch(e => {
+      status.style.display = 'block';
+      status.className = 'frais-status warn';
+      status.textContent = '⚠️ Impossible de contacter le serveur local (localhost:3001).';
+    })
+    .finally(() => { btn.disabled = false; });
+}
+
+// ── BOOT ───────────────────────────────────────────────────────────────────
+initRealm("R1");
+initRealm("R2");
+renderAll();
+loadSaved(); // Charge par-dessus les défauts une fois le serveur prêt
+</script>
+</body>
+</html>

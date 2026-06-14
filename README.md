@@ -18,26 +18,25 @@ Dashboard de gestion des stocks restaurants pour [Sim Companies](https://www.sim
 
 - [Node.js](https://nodejs.org/) installé sur ta machine
 
-### 2. Configuration de tes identifiants
+### 2. Lancement
+
+Double-clique sur `lancer-restaurant.bat` (Windows). Le serveur démarre sur
+`http://localhost:3001` et ouvre automatiquement le dashboard dans Chrome.
+
+### 3. Configuration de tes identifiants
 
 Ces informations sont **personnelles** et ne doivent jamais être partagées ou
 commitées sur GitHub.
 
-**Option recommandée : onglet ⚙️ Configuration**
-
-1. Lance `lancer-restaurant.bat`
-2. Va dans l'onglet **⚙️ Configuration**
-3. Renseigne pour chaque realm :
+1. Va dans l'onglet **⚙️ Configuration**
+2. Renseigne pour chaque realm :
    - **ID entreprise** : l'identifiant numérique de ton entreprise (visible
      dans l'URL de ta page d'entreprise sur simcompanies.com)
-   - **Cookie de session** (`sessionid=...`)
-4. Clique sur **Sauvegarder la configuration** — cela crée/met à jour
-   `simco-config.json` automatiquement.
+   - **Cookie de session** (`sessionid=...`, voir ci-dessous)
+3. Clique sur **Sauvegarder la configuration**
 
-**Option manuelle**
-
-1. Copie `simco-config.example.json` vers `simco-config.json`
-2. Renseigne `COMPANY_IDS` et `SESSION_COOKIES` directement dans le fichier
+Le fichier `simco-config.json` est créé/mis à jour automatiquement — tu n'as
+rien à éditer à la main.
 
 #### Comment récupérer ton `sessionid` :
 
@@ -46,15 +45,17 @@ commitées sur GitHub.
    **Application** (Chrome) ou **Stockage** (Firefox) → **Cookies** →
    `https://www.simcompanies.com`
 3. Copie la valeur du cookie `sessionid`
-4. Colle-la dans `simco-config.json` au format `sessionid=VALEUR_COPIEE`
+4. Colle-la dans l'onglet Configuration au format `sessionid=VALEUR_COPIEE`
 
 ⚠️ Ce cookie expire après quelques jours — il faudra le renouveler
-régulièrement.
+régulièrement (même onglet, même procédure).
 
-### 3. Lancement
+### 4. Tes données
 
-Double-clique sur `lancer-restaurant.bat` (Windows). Le serveur démarre sur
-`http://localhost:3001` et ouvre automatiquement le dashboard dans Chrome.
+Une fois tes restaurants configurés (ingrédients, niveaux, types...), clique
+sur **💾 Sauvegarder** : `simco-data.json` est créé automatiquement et
+contiendra toutes tes données (stock, prix, frais comptables, noms et ordre
+des restaurants...).
 
 ## Structure des fichiers
 
@@ -63,10 +64,8 @@ Double-clique sur `lancer-restaurant.bat` (Windows). Le serveur démarre sur
 | `simco-restaurant.html` | Interface du dashboard |
 | `server-restaurant.js` | Serveur local (proxy API + sauvegarde) |
 | `lancer-restaurant.bat` | Lanceur Windows |
-| `simco-config.example.json` | Modèle de configuration (à copier) |
-| `simco-config.json` | **Ta config privée** (non versionnée) |
-| `simco-data.example.json` | Exemple de structure de données |
-| `simco-data.json` | **Tes données privées** (non versionnée, créée au premier "Sauvegarder") |
+| `simco-config.json` | **Ta config privée**, créée via l'onglet Configuration |
+| `simco-data.json` | **Tes données privées**, créées au premier "Sauvegarder" |
 
 ## Notes
 
